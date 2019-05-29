@@ -13,14 +13,17 @@
 
 /* Solution functions */
 int breadth_first_search(int bank1[N], int bank2[N]);
-int depth_first_search(int bank1[N], int bank2[N]);
+int depth_first_search(int start[N], int from[N], int to[N]);
 int iterative_deepening_search(int bank1[N], int bank2[N]);
 
 /* Utility functions */
 int cross(int from[N], int to[N], int i, int j);
-int empty_bank(int bank[N]);
+int is_empty(int bank[N]);
 int find_empty_position(int arr[N]);
+int get_next(int start, int bank[N]);
 int valid_state(int bank[N]);
+
+void print_banks(int bank1[N], int bank2[N]);
 
 int main(void) {
 
@@ -32,17 +35,26 @@ int main(void) {
 	int bank1[N] = {-1, -1, -1, 1, 1, 1};
 	int bank2[N] = {0, 0, 0, 0, 0, 0};
 
+	print_banks(bank1, bank2);
+
 	return 1;
 }
 
 /*
  * Recursive solution by depth-first search
  */
-int depth_first_search(int bank1[], int bank2[]) {
+int depth_first_search(int start[N], int from[N], int to[N]) {
 
 	// base case, solution found
-	if (empty_bank(bank1)) {
+	if (is_empty(start)) {
 		return 1;
+	}
+	
+	int first;
+	int second;
+	for (int i = 0; i < N; ++i) {
+		first = get_next(i, from);
+		for (int j = first; j < N && (second = get_next(j, from)) != -1; ++j);
 	}
 
 	return 0;
@@ -81,8 +93,11 @@ int cross(int from[N], int to[N], int i, int j) {
 	return 1;
 }
 
-/* used to check if solution is found */
-int empty_bank(int bank[N]) {
+/* 
+ * used to check if solution is found 
+ * returns 1 on success, 0 otherwise
+ */
+int is_empty(int bank[N]) {
 
 	for (int i = 0; i < N; ++i)
 		if (bank[i] != 0)
@@ -98,9 +113,22 @@ int find_empty_position(int arr[N]) {
 	return -1;
 }
 
+/*
+ * return index of next person
+ * -1 if no valid persons
+ */
+int get_next(int start, int bank[N]) {
+
+	for (int i = start; i < N; ++i)
+		if (bank[i] != 0)
+			return i;
+	return -1;
+}
+
 /* 
  * verifys if a state is valid
  * i.e. a missionary is not outnumbered by cannibals
+ * 1 is valid, 0 is not
  */
 int valid_state(int bank[N]) {
 	int c_count = 0;
@@ -115,4 +143,21 @@ int valid_state(int bank[N]) {
 	if (c_count > m_count)
 		return 0;
 	return 1;
+}
+
+/*
+ * Testing function
+ */
+void print_banks(int bank1[N], int bank2[N]) {
+	
+	printf("Starting bank:");
+	for(int i = 0; i < N; ++i) {
+		printf(" %d", bank1[i]);
+	}
+	printf("\nEnding bank:");
+	for(int i = 0; i < N; ++i) {
+		printf(" %d", bank2[i]);
+	}
+	printf("\n");
+	return;
 }
