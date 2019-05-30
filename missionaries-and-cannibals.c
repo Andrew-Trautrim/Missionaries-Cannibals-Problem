@@ -9,18 +9,20 @@
  * missionaries will get eaten.
  */
 
-#define N 2
+// max # of possible states
+#define N 100
 
 /* Solution functions */
-int depth_first_search(int start[], int goal[], int visited[32][4], int path[32][4], int depth);
+int depth_first_search(int start[], int goal[], int visited[N][6], int path[N][6]);
 
 /* Utility functions */
-int cross(int from[], int to[], int i, int j);
+int double_cross(int from[], int to[], int i, int j);
+int single_cross(int from[], int to[], int i);
 int is_empty(int arr[]);
-int is_new_state(int start[], int end[], int visited[32][4]);
+int is_new_state(int start[], int end[], int visited[N][6]);
 int valid_state(int bank[]);
 
-void add_state(int start[], int end[], int visited[32][4]);
+void add_state(int start[], int end[], int visited[N][6]);
 void copy(int copy[], int org[]);
 void print_banks(int start[], int end[]);
 
@@ -32,13 +34,14 @@ int main(void) {
 	 * 3 missionaries and 3 cannibals
 	 * index 0 are missionaries
 	 * index 1 are cannibals
+	 * index 2 is the position of the boat
 	 */
-	int start[] = {3, 3};
-	int end[] = {0, 0};
-	int visited[32][4];
-	int path[32][4];
+	int start[] = {3, 3, 1};
+	int end[] = {0, 0, 0};
+	int visited[N][6];
+	int path[N][6];
 
-	depth_first_search(start, end, visited, path, 0);
+	depth_first_search(start, end, visited, path);
 
 	return 1;
 }
@@ -46,26 +49,26 @@ int main(void) {
 /*
  * Recursive solution by depth-first search
  */
-int depth_first_search(int start[], int end[], int visited[32][4], int path[32][4], int depth) {
+int depth_first_search(int start[], int end[], int visited[N][6], int path[N][6]) {
 
 	print_banks(start, end);
 	add_state(start, end, visited);
 
 	// start position is empty and solution has been found
-	if (start[0] == 0 && start[1] == 0) {
+	if (is_empty(start)) {
 		return 1;
 	}
 
 	// copies values incase we need to reset
-	int temp1[N];
-	int temp2[N];
+	int temp1[3];
+	int temp2[3];
 	copy(temp1, start);
 	copy(temp2, end);
 
 	// determines which direction to go
 	int *from;
 	int *to;
-	if (depth % 2 == 0) {
+	if (start[2] == 1) {
 		from = start;
 		to = end;
 	} else {
@@ -73,32 +76,31 @@ int depth_first_search(int start[], int end[], int visited[32][4], int path[32][
 		to = start;
 	}
 
-	depth++;
 	// attempts to find solution from current state
 	// returns 1 on success
 	// resets values otherwise
-	if (cross(from, to, 0, 0) && is_new_state(start, end, visited) && (depth_first_search(start, end, visited, path, depth))) { 
+	if (double_cross(from, to, 0, 0) && is_new_state(start, end, visited) && (depth_first_search(start, end, visited, path))) { 
 		return 1;
 	}
 	copy(start, temp1);
 	copy(end, temp2);
 
-	if (cross(from, to, 1, 1) && is_new_state(start, end, visited) && (depth_first_search(start, end, visited, path, depth)))
+	if (double_cross(from, to, 1, 1) && is_new_state(start, end, visited) && (depth_first_search(start, end, visited, path)))
 		return 1;
 	copy(start, temp1);
 	copy(end, temp2);
 
-	if (cross(from, to, 0, 1) && is_new_state(start, end, visited) && (depth_first_search(start, end, visited, path, depth)))
+	if (double_cross(from, to, 0, 1) && is_new_state(start, end, visited) && (depth_first_search(start, end, visited, path)))
 		return 1;
 	copy(start, temp1);
 	copy(end, temp2);
 	
-	if (cross(from, to, 0, -1) && is_new_state(start, end, visited) && (depth_first_search(start, end, visited, path, depth)))
+	if (single_cross(from, to, 0) && is_new_state(start, end, visited) && (depth_first_search(start, end, visited, path)))
 		return 1;
 	copy(start, temp1);
 	copy(end, temp2);
 	
-	if (cross(from, to, 1, -1) && is_new_state(start, end, visited) && (depth_first_search(start, end, visited, path, depth)))
+	if (single_cross(from, to, 1) && is_new_state(start, end, visited) && (depth_first_search(start, end, visited, path)))
 		return 1;
 	copy(start, temp1);
 	copy(end, temp2);
@@ -108,28 +110,32 @@ int depth_first_search(int start[], int end[], int visited[32][4], int path[32][
 }
 
 /* 
- * person(s) cross the river
+ * two people cross the river
  * returns 1 on success, 0 otherwise
  */
-int cross(int from[], int to[], int i, int j) {
+int double_cross(int from[], int to[], int i, int j) {
 
-	from[i] -= 1;
-	to[i] += 1;
-	if (j != -1) {
-		from[j] -= 1;
-		to[j] += 1;
-	}
+	if (from[i] == 0 || from[j] == 0)
+		return 0;
+
+	from[i]--;
+	to[i]++;
+	from[j]--;
+	to[j]++;
 
 	// checks if the cross is valid
 	if (!valid_state(from) || !valid_state(to)) {
-		from[i] += 1;
-		to[i] -= 1;
-		if(j != -1) {
-			from[j] += 1;
-			to[j] += 1;
-		}
+		// resets values
+		from[i]++;
+		to[i]--;
+		from[j]++;
+		to[j]--;
 		return 0;
 	}
+
+	// switches the side of the boat
+	from[2] = 0;
+	to[2] = 1;
 
 	return 1;
 }
@@ -142,13 +148,40 @@ int is_empty(int arr[]) {
 }
 
 /* checks if current state has already been visited */
-int is_new_state(int start[], int end[], int visited[32][4]) {
-	for (int i = 0; i < 32; ++i) {
-		if (start[0] == visited[i][0] && start[1] == visited[i][1] && end[0] == visited[i][2] && end[1] == visited[i][3])
+int is_new_state(int start[], int end[], int visited[N][6]) {
+	for (int i = 0; i < N; ++i) {
+		if (start[0] == visited[i][0] && start[1] == visited[i][1] && start[2] == visited[i][2] && 
+				end[0] == visited[i][3] && end[1] == visited[i][4] && end[2] == visited[i][5])
 			return 0;
 		else if (is_empty(visited[i]))
 			return 1;
 	}
+	return 1;
+}
+
+/*
+ * one person crosses the river
+ */
+int single_cross(int from[], int to[], int i) {
+
+	// can't have negative values
+	if (from[i] == 0)
+		return 0;
+
+	from[i]--;
+	to[i]++;
+
+	// checks if the action is valid
+	if (!valid_state || !valid_state) {
+		from[i]++;
+		to[i]--;
+		return 0;
+	}
+
+	// switches the side of the boat
+	from[2] = 0;
+	to[2] = 1;
+
 	return 1;
 }
 
@@ -158,21 +191,23 @@ int is_new_state(int start[], int end[], int visited[32][4]) {
  * 1 is valid, 0 is not
  */
 int valid_state(int bank[]) {
-	if (bank[0] < bank[1] && bank[0] != 0)
+	if ((bank[0] < bank[1] && bank[0] != 0))
 		return 0;
 	return 1;
 }
 
 /*
- * adds a state to the visited array
+ * adds a state to the visited
  */
-void add_state(int start[], int end[], int visited[32][4]) {
-	for (int i = 0; i < 32; ++i) {
+void add_state(int start[], int end[], int visited[N][6]) {
+	for (int i = 0; i < N; ++i) {
 		if (is_empty(visited[i])) {
 			visited[i][0] = start[0];
 			visited[i][1] = start[1];
-			visited[i][2] = end[0];
-			visited[i][3] = end[1];
+			visited[i][2] = start[2];
+			visited[i][3] = end[0];
+			visited[i][4] = end[1];
+			visited[i][5] = end[2];
 			return;
 		}
 	}
@@ -182,7 +217,7 @@ void add_state(int start[], int end[], int visited[32][4]) {
  * copies vale from one array into the other
  */
 void copy(int copy[], int org[]) {
-	for (int i = 0; i < N; ++i)
+	for (int i = 0; i < 3; ++i)
 		copy[i] = org[i];
 	return;
 }
@@ -191,7 +226,7 @@ void copy(int copy[], int org[]) {
  * Testing function
  */
 void print_banks(int start[], int end[]) {
- 	fprintf(stdout, "Start: %d %d\n", start[0], start[1]);
-	fprintf(stdout, "End:   %d %d\n\n", end[0], end[1]);
+ 	fprintf(stdout, "Start: %d %d: %d\n", start[0], start[1], start[2]);
+	fprintf(stdout, "End:   %d %d: %d\n\n", end[0], end[1], end[2]);
 	return;
 }
