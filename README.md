@@ -1,10 +1,10 @@
 # Missionaries-Cannibals-Problem
-Basic AI puzzle using a variety of search algorithms including, depth-first, breadth-first, bi-directional, iterative-deepening, etc.
+Basic AI puzzle using a depth first search algorithm
 
 The problem is as follows:
 "On one bank of a river are three missionaries and three cannibals. There is one boat available that can hold up to two people and that they would like to use to cross the river. If the cannibals ever outnumber the missionaries on either of the river’s banks, the missionaries will get eaten."
 
-Each bank of the river is represented as an array of integers, index 0 being a missionary, index 1 a cannibal, and index representing the boat (1 having the boat nad 0 not)
+Each bank of the river is represented as an array of integers, index 0 being a missionary, index 1 a cannibal, and index 2 representing the boat (1 having the boat and 0 not)
 
 Output:
 <pre>
