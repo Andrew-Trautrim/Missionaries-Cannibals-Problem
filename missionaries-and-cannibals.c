@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 
 /*
  * The Missionary Cannibal Problem
@@ -13,18 +14,19 @@
 #define N 100
 
 /* Solution functions */
-int depth_first_search(int start[], int goal[], int visited[N][6], int path[N][6]);
+int depth_first_search(int start[], int goal[], int **visited);
 
 /* Utility functions */
 int double_cross(int from[], int to[], int i, int j);
 int single_cross(int from[], int to[], int i);
 int is_empty(int arr[]);
-int is_new_state(int start[], int end[], int visited[N][6]);
+int is_new_state(int start[], int end[], int **visited);
 int valid_state(int bank[]);
 
-void add_state(int start[], int end[], int visited[N][6]);
+void add_state(int start[], int end[], int **visited);
 void copy(int copy[], int org[]);
 void print_banks(int start[], int end[]);
+void reset(int org1[], int org2[], int copy1[], int copy2[]);
 
 int main(void) {
 
@@ -38,10 +40,17 @@ int main(void) {
 	 */
 	int start[] = {3, 3, 1};
 	int end[] = {0, 0, 0};
-	int visited[N][6];
-	int path[N][6];
 
-	depth_first_search(start, end, visited, path);
+	int **visited = (int**)calloc(0, sizeof(int*) * N);
+	for (int i = 0; i < N; ++i)
+		visited[i] = (int*)calloc(0, sizeof(int) * 6);
+
+	// solve function
+	depth_first_search(start, end, visited);
+
+	for (int i = 0; i < N; ++i)
+		free(visited[i]);
+	free(visited);
 
 	return 1;
 }
@@ -49,7 +58,7 @@ int main(void) {
 /*
  * Recursive solution by depth-first search
  */
-int depth_first_search(int start[], int end[], int visited[N][6], int path[N][6]) {
+int depth_first_search(int start[], int end[], int **visited) {
 
 	print_banks(start, end);
 	add_state(start, end, visited);
@@ -79,31 +88,20 @@ int depth_first_search(int start[], int end[], int visited[N][6], int path[N][6]
 	// attempts to find solution from current state
 	// returns 1 on success
 	// resets values otherwise
-	if (double_cross(from, to, 0, 0) && is_new_state(start, end, visited) && (depth_first_search(start, end, visited, path))) { 
-		return 1;
+	for (int i = 0; i < 2; ++i) {
+		for (int j = 0; j < 2; ++j) {
+			if (double_cross(from, to, i, j) && is_new_state(start, end, visited))
+				if (depth_first_search(start, end, visited)) 
+					return 1;
+			copy(start, temp1);
+			copy(end, temp2);
+		}
+		if (single_cross(from, to, i) && is_new_state(start, end, visited))
+			if (depth_first_search(start, end, visited))
+				return 1;
+		copy(start, temp1);
+		copy(end, temp2);
 	}
-	copy(start, temp1);
-	copy(end, temp2);
-
-	if (double_cross(from, to, 1, 1) && is_new_state(start, end, visited) && (depth_first_search(start, end, visited, path)))
-		return 1;
-	copy(start, temp1);
-	copy(end, temp2);
-
-	if (double_cross(from, to, 0, 1) && is_new_state(start, end, visited) && (depth_first_search(start, end, visited, path)))
-		return 1;
-	copy(start, temp1);
-	copy(end, temp2);
-	
-	if (single_cross(from, to, 0) && is_new_state(start, end, visited) && (depth_first_search(start, end, visited, path)))
-		return 1;
-	copy(start, temp1);
-	copy(end, temp2);
-	
-	if (single_cross(from, to, 1) && is_new_state(start, end, visited) && (depth_first_search(start, end, visited, path)))
-		return 1;
-	copy(start, temp1);
-	copy(end, temp2);
 
 	// unsuccessful
 	return 0;
@@ -148,7 +146,7 @@ int is_empty(int arr[]) {
 }
 
 /* checks if current state has already been visited */
-int is_new_state(int start[], int end[], int visited[N][6]) {
+int is_new_state(int start[], int end[], int **visited) {
 	for (int i = 0; i < N; ++i) {
 		if (start[0] == visited[i][0] && start[1] == visited[i][1] && start[2] == visited[i][2] && 
 				end[0] == visited[i][3] && end[1] == visited[i][4] && end[2] == visited[i][5])
@@ -199,7 +197,7 @@ int valid_state(int bank[]) {
 /*
  * adds a state to the visited
  */
-void add_state(int start[], int end[], int visited[N][6]) {
+void add_state(int start[], int end[], int **visited) {
 	for (int i = 0; i < N; ++i) {
 		if (is_empty(visited[i])) {
 			visited[i][0] = start[0];
